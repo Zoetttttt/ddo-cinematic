@@ -90,14 +90,16 @@ function introModelBlend(elapsed,count){
 }
 function playIntro(force=false){
  if(reduced.matches||introActive)return;
- try{if(!force&&sessionStorage.getItem('ddo-intro-20261110c'))return}catch{}
+ try{if(!force&&sessionStorage.getItem('ddo-intro-20261110d'))return}catch{}
  introActive=true;cancelAnimationFrame(timer);document.body.classList.add('intro-open');syncVideo();
  const d=document.createElement('dialog');introDialog=d;d.className='ddo-intro intro-v3';d.tabIndex=0;
  d.setAttribute('aria-label',text('D Design Office opening. Click anywhere or press Enter to enter.','D Design Office 开场。点击任意位置或按回车进入。'));
- d.innerHTML='<canvas class="intro-canvas" aria-hidden="true"></canvas>';
+ d.innerHTML=`<canvas class="intro-canvas" aria-hidden="true"></canvas><div class="intro-identity" aria-hidden="true" hidden>${[0,1].map(()=>'<span class="intro-identity-glyph"><svg viewBox="0 0 68 100"><path fill="currentColor" fill-rule="evenodd" d="M0 0H21.76C82.96 0 82.96 100 21.76 100H0ZM15.5 15.5V84.5H21.76C62.56 84.5 62.56 15.5 21.76 15.5Z"/></svg></span>').join('')}<span class="intro-identity-glyph"><svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="40.25" stroke-width="15.5" fill="none" stroke="currentColor"/></svg></span></div>`;
  document.body.append(d);d.showModal();d.focus({preventScroll:true});
  introAbort=new AbortController();const signal=introAbort.signal;
  const canvas=d.querySelector('canvas'),ctx=canvas.getContext('2d',{alpha:true});
+ const identity=d.querySelector('.intro-identity'),identityGlyphs=Array.from(identity.children),identityRing=identity.querySelector('circle');
+ let identityHeight=0,identityCounter=null,wordBackdropPainted=false;
  let W=innerWidth,H=innerHeight,DPR=Math.min(devicePixelRatio||1,2),models=[],ready=false,elapsed=0,last=0;
  let scatter=null,phase='',logoRect=null;const modelLayers=new Map();
  const ink=getComputedStyle(document.body).getPropertyValue('--ink').trim()||'#342d27';
@@ -106,7 +108,7 @@ function playIntro(force=false){
  const smoother=v=>{v=clamp(v);return v*v*v*(v*(v*6-15)+10)};
  const spring=(t,damping=7.5,frequency=15)=>t<=0?0:1-Math.exp(-damping*t)*(Math.cos(frequency*t)+damping/frequency*Math.sin(frequency*t));
  const setPhase=p=>{if(phase!==p){phase=p;d.dataset.phase=p}};
- function resize(){modelLayers.clear();W=innerWidth;H=innerHeight;DPR=Math.min(devicePixelRatio||1,2);canvas.width=Math.round(W*DPR);canvas.height=Math.round(H*DPR);canvas.style.width=W+'px';canvas.style.height=H+'px';logoRect=$('.brand .logo-symbol').getBoundingClientRect();}
+ function resize(){modelLayers.clear();wordBackdropPainted=false;W=innerWidth;H=innerHeight;DPR=Math.min(devicePixelRatio||1,2);canvas.width=Math.round(W*DPR);canvas.height=Math.round(H*DPR);canvas.style.width=W+'px';canvas.style.height=H+'px';logoRect=$('.brand .logo-symbol').getBoundingClientRect();}
  resize();window.addEventListener('resize',resize,{signal});
  function modelBox(frame){
   const [, ,cw,ch]=frame.crop;
@@ -141,25 +143,34 @@ function playIntro(force=false){
  }
  function letterD(x,y,h,sx,sy,alpha){
   const w=h*.68,stroke=h*.155;ctx.save();ctx.globalAlpha=alpha;ctx.translate(x,y);ctx.scale(sx,sy);ctx.translate(-w/2,-h/2);
-  ctx.fillStyle=ink;ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo(w*.32,0);ctx.bezierCurveTo(w*1.22,0,w*1.22,h,w*.32,h);ctx.lineTo(0,h);ctx.closePath();
+  ctx.fillStyle=blue;ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo(w*.32,0);ctx.bezierCurveTo(w*1.22,0,w*1.22,h,w*.32,h);ctx.lineTo(0,h);ctx.closePath();
   ctx.moveTo(stroke,stroke);ctx.lineTo(stroke,h-stroke);ctx.lineTo(w*.32,h-stroke);ctx.bezierCurveTo(w*.92,h-stroke,w*.92,stroke,w*.32,stroke);ctx.closePath();ctx.fill('evenodd');ctx.restore();
  }
- function word(t){
-  const h=Math.min(W*(W<760?.26:.19),H*.24,172),gap=h*.14,step=h*.76+gap,baseO=W/2+step;
-  // Every letter completes its initial spring before the third O begins to travel.
-  const settled=t=>mix(spring(t),1,smoother((t-.85)/.5));
-  for(let i=0;i<2;i++){
-   const time=Math.max(0,t-i*105)/1000,b=settled(time),out=smoother((t-1780-i*35)/480);
-   letterD(W/2-step+i*step,H/2+(1-b)*65,h,.68+.32*b,1.2-.2*b,clamp(time*11)*(1-out));
+ function identityPose(t){
+  const h=Math.min(W*(W<760?.29:.215),H*.29,204),step=h*.9,jump=h*.34;
+  const flow=smooth((t-760)/1880),arrival=age=>spring(age,6.8,14.6);
+  const letters=[0,1].map(i=>{
+   const age=Math.max(0,t-i*100)/1000,b=arrival(age),out=smoother((t-930-i*60)/600);
+   return {x:W/2-step+i*step+h*.08*(1-b)-h*.065*flow,y:H/2+jump*(1-b)-h*.018*out,
+    sx:(.84+.16*b)*(1-.02*out),sy:(1.13-.13*b)*(1-.02*out),alpha:smoother(age/.24)*(1-out)};
+  });
+  const age=Math.max(0,t-200)/1000,b=arrival(age),strain=.014*Math.sin(Math.PI*flow);
+  const contraction=smoother((t-2640)/680),outer=mix(h*.48,7,contraction),hole=outer*(1-.155/.48)*(1-smoother(contraction/.8));
+  const o={x:mix(W/2+step,W/2,flow)+h*.08*(1-b)*(1-flow),y:H/2+jump*(1-b)*(1-flow),
+   sx:.84+.16*b+strain,sy:1.13-.13*b-strain*.75,alpha:smoother(age/.24),outer,hole};
+  return {h,letters,o};
+ }
+ function word(t,paint=false){
+  const {h,letters,o}=identityPose(t);
+  if(paint){
+   letters.forEach(p=>letterD(p.x,p.y,h,p.sx,p.sy,p.alpha));
+   ctx.save();ctx.translate(o.x,o.y);ctx.scale(o.sx,o.sy);circle(0,0,o.outer,o.hole,blue,o.alpha);ctx.restore();return;
   }
-  // This is the original third glyph throughout: no replacement, fade or size change during travel.
-  const ot=Math.max(0,t-210)/1000,b=settled(ot),move=clamp((t-1600)/900);
-  const travel=move<.78?1.012*smoother(move/.78):mix(1.012,1,smoother((move-.78)/.22));
-  const ox=mix(baseO,W/2,travel),oy=H/2+(1-b)*65;
-  const contraction=smoother((t-2640)/680),outer=mix(h*.48,7,contraction);
-  const hole=outer*(1-.155/.48)*(1-smoother(contraction/.8));
-  const ct=smoother(contraction*1.6),color=`rgb(${mix(52,182,ct)},${mix(45,207,ct)},${mix(39,233,ct)})`;
-  ctx.save();ctx.translate(ox,oy);ctx.scale(.68+.32*b,1.2-.2*b);circle(0,0,outer,hole,color,clamp(ot*11));ctx.restore();
+  if(identityHeight!==h){identityHeight=h;identityGlyphs.forEach((el,i)=>{el.style.width=(i<2?h*.68:h)+'px';el.style.height=h+'px'})}
+  const place=(el,p,w,scale=1)=>{el.style.transform=`translate3d(${(p.x-w/2).toFixed(4)}px,${(p.y-h/2).toFixed(4)}px,0) scale(${(p.sx*scale).toFixed(6)},${(p.sy*scale).toFixed(6)})`;el.style.opacity=p.alpha.toFixed(5)};
+  letters.forEach((p,i)=>place(identityGlyphs[i],p,h*.68));place(identityGlyphs[2],o,h,o.outer/(h*.48));
+  const counter=(o.hole/o.outer*48).toFixed(5);
+  if(counter!==identityCounter){identityCounter=counter;identityRing.setAttribute('r',String((48+Number(counter))/2));identityRing.setAttribute('stroke-width',String(48-Number(counter)))}
  }
  function makePieces(originX=W/2,originY=H/2){
   const cols=W<760?4:7,rows=W<760?7:5,points=[],pieces=[];
@@ -197,23 +208,26 @@ function playIntro(force=false){
  }
  function enter(e){
   if(scatter||!introActive)return;e?.preventDefault();e?.stopPropagation();
+  if(ready&&elapsed<3500){ctx.setTransform(DPR,0,0,DPR,0,0);ctx.clearRect(0,0,W,H);ctx.fillStyle='#fff';ctx.fillRect(0,0,W,H);word(elapsed,true);identity.hidden=true}
   const snapshot=document.createElement('canvas');snapshot.width=canvas.width;snapshot.height=canvas.height;snapshot.getContext('2d').drawImage(canvas,0,0);
   scatter={source:snapshot,time:0,pieces:makePieces(e?.clientX||W/2,e?.clientY||H/2)};document.body.classList.add('intro-entering');setPhase('dissolve');
  }
  d.addEventListener('click',enter,{signal});d.addEventListener('cancel',enter,{signal});
  d.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){enter(e)}},{signal});
  Promise.all([loadIntroModels(),document.fonts.load('600 24px Jost').catch(()=>{})]).then(([frames])=>{
-  if(!introActive||introDialog!==d)return;models=frames;d.dataset.frames=String(frames.length);ready=true;elapsed=0;try{sessionStorage.setItem('ddo-intro-20261110c','1')}catch{}
+  if(!introActive||introDialog!==d)return;models=frames;d.dataset.frames=String(frames.length);ready=true;elapsed=0;try{sessionStorage.setItem('ddo-intro-20261110d','1')}catch{}
  });
  function frame(now){
   if(!introActive||introDialog!==d)return;
-  const dt=last?Math.min(50,now-last):0;last=now;ctx.setTransform(DPR,0,0,DPR,0,0);ctx.clearRect(0,0,W,H);
+  const dt=last?Math.min(50,now-last):0;last=now;ctx.setTransform(DPR,0,0,DPR,0,0);
+  const wordFrame=ready&&!scatter&&elapsed+dt<3500;identity.hidden=!wordFrame;
+  if(!wordFrame||!wordBackdropPainted)ctx.clearRect(0,0,W,H);
   if(scatter){scatter.time+=dt;fragments(scatter.pieces,scatter.time/950,scatter.source);if(scatter.time>=1050){finishIntro();return}}
   else if(!ready){setPhase('loading');ctx.fillStyle='#fff';ctx.fillRect(0,0,W,H);circle(W/2,H/2,6+Math.sin(now/350)*1.2,0,blue)}
   else{
    elapsed+=dt;const modelStart=4220,modelEnd=modelStart+Math.max(0,models.length-1)*introFrameStep+introFrameBlend+320,flightEnd=modelEnd+1540;
-   if(elapsed<modelEnd){ctx.fillStyle='#fff';ctx.fillRect(0,0,W,H)}
-   if(elapsed<3500){setPhase(elapsed<1600?'word':elapsed<2640?'letter-o':elapsed<3320?'o-to-dot':'dot');word(elapsed)}
+   if(elapsed<modelEnd&&(!wordFrame||!wordBackdropPainted)){ctx.fillStyle='#fff';ctx.fillRect(0,0,W,H)}
+   if(elapsed<3500){setPhase(elapsed<760?'word':elapsed<2640?'letter-o':elapsed<3320?'o-to-dot':'dot');word(elapsed);wordBackdropPainted=true}
    else if(!models.length){finishIntro();return}
    else if(elapsed<modelStart){
     setPhase('dot-to-model');const t=clamp((elapsed-3500)/720),b=mix(spring(t*1.1,8,10),1,smoother((t-.62)/.38)),radius=mix(7,Math.hypot(W,H)*.57,smoother(t));
