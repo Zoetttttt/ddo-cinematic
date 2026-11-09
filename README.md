@@ -1,5 +1,9 @@
 # D Design Office — revision 5 (10 November 2026)
 
+**ddov6 独立版：** [打开独立文件夹](ddov6/) · [访问 ddov6](https://zoetttttt.github.io/ddo-cinematic/ddov6/)
+
+完整源码和素材集中在 `ddov6/`，可单独下载或部署。
+
 Standalone bilingual website. Build command: blank. Netlify publish directory: `.`. Branch: `main`.
 
 ## Updated experience
