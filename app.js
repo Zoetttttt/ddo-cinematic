@@ -29,7 +29,7 @@ async function toggleMusic(){if(musicBusy)return;musicBusy=true;try{soundWanted=
 let slide=0,timer=null,playing=!reduced.matches;
 const heroes=['sumi','arctic-regent','koko-dixon','dragon-regent','yebisu'].map(id=>projects.find(p=>p.id===id));
 const heroPhotos=['hero-sumi','hero-arctic','hero-koko','hero-dragon','hero-yebisu'];
-const sceneDurations=[15000,15000,15920,15000,15000];
+const sceneDurations=[16000,16000,15920,16000,16000];
 function home(){const p=heroes[slide];return `<main id="main" class="film"><section class="hero-film" aria-label="${text('D Design Office — places in motion','D Design Office — 流动的空间')}"><div class="film-screen" aria-hidden="true">${heroes.map((p,i)=>`<div class="film-shot ${i===slide?'is-active':''}" data-shot="${i}">${i===2?`<video id="morefun-video" muted playsinline preload="none" poster="${image('hero-koko-1600')}" aria-label="${text('KOKO Amusement interior film','KOKO Amusement 空间影像')}"></video>`:`<img src="${image(heroPhotos[i]+'-1600')}" srcset="${image(heroPhotos[i]+'-1600')} 1600w, ${image(heroPhotos[i]+'-3200')} 3200w" sizes="100vw" alt="" ${i===0?'fetchpriority="high"':'loading="eager"'}>`}<div class="film-vignette"></div></div>`).join('')}</div><div class="film-shade" aria-hidden="true"></div><div class="film-overline"><span><button id="replay-intro" aria-label="${text('Replay DDO introduction','重播 DDO 开场')}" class="intro-replay">${dot}</button>${text('INTERIORS & HUMAN EXPERIENCE','空间，与人的体验')}</span><span>${text('SYDNEY, AUSTRALIA','澳大利亚 · 悉尼')}</span></div><div class="film-title"><p>${text('D DESIGN OFFICE — A SPATIAL PRACTICE','D DESIGN OFFICE — 空间设计实践')}</p><h1>${text('<span>The art of</span><br><span>being somewhere.</span>','<span>置身其间，</span><br><span>感受空间的艺术。</span>')}</h1></div><span class="film-side">${text('LIGHT. MATERIAL. MEMORY.','光线 · 材质 · 记忆')}</span><div class="film-bottom"><a class="film-explore" href="${url('projects/')}"><span class="film-round">${arrow()}</span><span>${text('EXPLORE OUR SPACES','探索我们的空间')}</span></a><a class="film-project" id="hero-project" href="${projectURL(p)}"><span class="film-focus">${text('IN FOCUS','此刻聚焦')} / <span id="slide-number">${String(slide+1).padStart(2,'0')}</span></span><span class="film-project-line"><span id="hero-name">${p.brand}, ${p.location}</span>${arrow()}</span></a><div class="film-controls"><span class="film-counter">01</span><div class="film-timeline" role="group" aria-label="${text('Featured spaces','精选空间')}">${heroes.map((p,i)=>`<button data-slide="${i}" aria-label="${text('Show','查看')} ${p.brand}" aria-pressed="${i===slide}"><i class="track"><i></i></i></button>`).join('')}</div><span class="film-counter">05</span><button id="pause" class="film-pause" aria-pressed="${!playing}" aria-label="${playing?text('Pause film','暂停影像'):text('Play film','播放影像')}">${playing?'<span class="pause-icon" aria-hidden="true"></span>':'<span class="play-icon" aria-hidden="true"></span>'}</button></div></div><p class="sound-notice" id="sound-notice" role="status"></p></section></main>`}
 let frameElapsed=0,lastFrame=null;
 function startTimer(){cancelAnimationFrame(timer);lastFrame=null;document.body.classList.toggle('film-paused',!playing||document.hidden);if(!playing||document.hidden||introActive)return;function tick(now){if(lastFrame!==null)frameElapsed+=now-lastFrame;lastFrame=now;document.body.style.setProperty('--film-progress',Math.min(frameElapsed/sceneDurations[slide],1));if(frameElapsed>=sceneDurations[slide]){frameElapsed=0;changeSlide(slide+1)}timer=requestAnimationFrame(tick)}timer=requestAnimationFrame(tick)}
@@ -54,41 +54,165 @@ const servicesData=[
 ['Documents & approvals','文件与审批','Clarity at every step.','让每一步，都清晰可循。','We translate design intent into the documents needed to move a project forward, coordinating requirements with the relevant parties.','我们将设计意图转化为推进项目所需的文件，并与相关各方协调要求，让方案逐步走向实施。',['Design documentation','RDM, strata & owner approvals','DA, CC & CDC documentation','Tender & construction documentation'],['设计文件','商场、物业与业主审批文件','DA、CC 与 CDC 申请文件','招标与施工文件'],'hero-koko-1600'],
 ['Realisation & review','实施与设计跟进','Carry the idea into the everyday.','让设计，抵达日常。','We stay connected to the making of a space, reviewing the work on site and collaborating with D Construction Office to help the design arrive as intended.','我们持续关注空间的实施，通过现场设计跟进，并与 D Construction Office 协作，协助设计意图完整落地。',['On-site design review','Design coordination','Material & detail review','Collaboration with D Construction Office'],['现场设计跟进','设计协调','材料与细部核对','与 D Construction Office 协作'],'hero-dragon-1600']
 ];
-function services(){const headings=[['Creative direction','概念与方向'],['Interior design','空间与设计'],['Documentation','文件与审批'],['Realisation','实施与跟进']];return `<main id="main" class="page services-page service-editorial"><header class="service-editorial-intro"><h1>${text('Services','服务')}</h1><span class="service-rule" aria-hidden="true"></span><p>${text('A clear idea. A thoughtful space.<br>Considered from the first sketch to the final detail.','清晰的想法，细腻的空间。<br>从最初的草图，到最后的细节。')}</p></header><div class="service-open-columns">${servicesData.map((s,i)=>`<section class="service-column"><h2>${text(...headings[i])}</h2><ul>${s[lang==='zh'?7:6].map(item=>`<li>${item}</li>`).join('')}</ul></section>`).join('')}</div><section class="service-thinking"><h2>${text('It begins with<br>a conversation.','一切，<br>始于对话。')}</h2><div><p>${text('We begin by listening — to your ideas, the way your business works, and the people who will use the space. From this conversation, a clear design direction takes shape.','我们先倾听你的想法、理解业务的日常，也观察未来使用空间的人。清晰的设计方向，就从这些对话中逐渐成形。')}</p><p>${text('Light, material and detail are considered together. Design documentation, approvals and on-site review carry the idea through to the built work, in close collaboration with D Construction Office.','我们将光线、材质与细节一同考虑，通过设计文件、审批协调与现场设计跟进，并与 D Construction Office 紧密协作，让想法成为真实的空间。')}</p></div></section><div class="service-diptych"><figure><img src="${image('hero-arctic-1600')}" alt="${text('Arctic White — a study in light and form','Arctic White — 光与形态的研究')}" loading="lazy"><figcaption>${text('LIGHT / FORM','光线 / 形态')}</figcaption></figure><figure><img src="${image('hero-sumi-1600')}" alt="${text('Sumi Bar — material and atmosphere','Sumi Bar — 材质与氛围')}" loading="lazy"><figcaption>${text('MATERIAL / ATMOSPHERE','材质 / 氛围')}</figcaption></figure></div><div class="service-closing"><p>${text('A new place. A different perspective.','一个新空间，一种新视角。')}</p><a href="${url('contact/')}">${text('Let’s talk about your space.','聊聊你的空间。')}${arrow()}</a></div></main>`}
+function services(){const headings=[['Creative direction','概念与方向'],['Interior design','空间与设计'],['Documentation','文件与审批'],['Realisation','实施与跟进']];return `<main id="main" class="page services-page service-composition"><header class="service-masthead"><h1>${text('Services','服务')}</h1><div class="service-statement"><h2>${text('An idea,<br>given space.','让想法，<br>有处安放。')}</h2><p>${text('We bring a space into focus.<br>Through light, material and the details of everyday life.','从光线、材质，<br>到日常生活的细节，<br>让空间逐渐清晰。')}</p><span class="service-orbit" aria-hidden="true"></span></div></header><div class="service-fields">${servicesData.map((s,i)=>`<section class="service-field"><div class="service-field-heading"><i aria-hidden="true"></i><h2>${text(...headings[i])}</h2></div><ul>${s[lang==='zh'?7:6].map(item=>`<li>${item}</li>`).join('')}</ul></section>`).join('')}</div><figure class="service-panorama"><img src="${image('hero-arctic-3200')}" alt="${text('Arctic White — light shaping a space','Arctic White — 光线塑造空间')}" loading="lazy"><figcaption><span>ARCTIC WHITE</span><span>${text('AN IDEA, INHABITED.','从想法，到置身其间。')}</span></figcaption></figure><section class="service-dialogue"><h2>${text('A dialogue between<br>idea and making.','在想象与建造之间，<br>保持对话。')}</h2><div><p>${text('We begin by listening — to your ideas, the way your business works, and the people who will use the space. From this conversation, a clear design direction takes shape.','我们先倾听你的想法、理解业务的日常，也观察未来使用空间的人。清晰的设计方向，就从这些对话中逐渐成形。')}</p><p>${text('Light, material and detail are considered together. Design documentation, approvals and on-site review carry the idea through to the built work, in close collaboration with D Construction Office.','我们将光线、材质与细节一同考虑，通过设计文件、审批协调与现场设计跟进，并与 D Construction Office 紧密协作，让想法成为真实的空间。')}</p></div></section><div class="service-end"><span>${text('WHAT DO YOU HAVE IN MIND?','你正在想象什么？')}</span><a href="${url('contact/')}">${text('Let’s begin.','从一次对话开始。')}${arrow()}</a></div></main>`}
 
-let introActive=false,introTimers=[],introDialog=null,introShapeRAF=0,introAnimations=[];
-function finishIntro(){introTimers.forEach(clearTimeout);introTimers=[];cancelAnimationFrame(introShapeRAF);introAnimations.forEach(a=>a.cancel());introAnimations=[];introActive=false;if(introDialog?.open)introDialog.close();introDialog?.remove();introDialog=null;document.body.classList.remove('intro-open');frameElapsed=0;startTimer();syncVideo()}
-function playIntro(force=false){if(reduced.matches)return;let seen=false;try{seen=sessionStorage.getItem('ddo-intro-20261110')==='1'}catch{}if((!force&&seen)||introActive)return;
+// One render clock keeps the identity, model reveal and handover continuous.
+let introActive=false,introDialog=null,introRAF=0,introAbort=null,introAssets=null;
+const modelCrops=[
+ [18,18,680,724],[18,126,626,655],[18,136,630,650],
+ [18,18,704,642],[18,18,720,730],[18,18,846,560],
+ [18,18,864,647],[18,18,700,770],[20,20,640,568],
+ [18,18,932,686],[35,18,570,730],[18,18,932,686],
+ [18,18,1284,387]
+];
+function finishIntro(){
+ cancelAnimationFrame(introRAF);introAbort?.abort();introAbort=null;introActive=false;
+ if(introDialog?.open)introDialog.close();introDialog?.remove();introDialog=null;
+ document.body.classList.remove('intro-open','intro-entering');
+ if(PAGE==='home'){frameElapsed=0;startTimer();syncVideo()}
+}
+function loadIntroModels(){
+ if(!introAssets)introAssets=Promise.all(modelCrops.map((crop,i)=>new Promise(resolve=>{
+  const img=new Image();img.decoding='async';let settled=false;
+  const done=value=>{if(!settled){settled=true;resolve(value)}};
+  img.onload=()=>img.decode().catch(()=>{}).then(()=>done({img,crop}));
+  img.onerror=()=>done(null);img.src=url('assets/model-large-'+String(i+1).padStart(2,'0')+'.webp');
+  setTimeout(()=>done(null),10000);
+ }))).then(items=>items.filter(Boolean));
+ return introAssets;
+}
+function playIntro(force=false){
+ if(reduced.matches||introActive)return;
+ try{if(!force&&sessionStorage.getItem('ddo-intro-20261110b'))return}catch{}
  introActive=true;cancelAnimationFrame(timer);document.body.classList.add('intro-open');syncVideo();
- const d=document.createElement('dialog');introDialog=d;d.className='ddo-intro intro-v2';d.dataset.phase='word';d.setAttribute('aria-label',text('D Design Office introduction','D Design Office 开场动画'));
- d.innerHTML=`<button class="intro-skip">${text('SKIP INTRO','跳过开场')}${arrow()}</button><div class="intro-stage" aria-hidden="true"><span class="intro-glyph intro-d">D</span><span class="intro-glyph intro-d">D</span><span class="intro-glyph intro-o"><svg viewBox="0 0 100 100" aria-hidden="true"><circle class="intro-ring" cx="50" cy="50" r="34" fill="none" stroke="currentColor" stroke-width="16"/></svg></span></div><div class="intro-models" aria-hidden="true">${Array.from({length:13},(_,i)=>`<img src="${url('assets/model-large-'+String(i+1).padStart(2,'0')+'.webp')}" alt="" loading="eager">`).join('')}</div>`;
- document.body.append(d);d.showModal();try{sessionStorage.setItem('ddo-intro-20261110','1')}catch{}
- d.querySelector('.intro-skip').addEventListener('click',finishIntro);d.addEventListener('cancel',e=>{e.preventDefault();finishIntro()});
- const born=performance.now(),later=(fn,ms)=>introTimers.push(setTimeout(()=>{if(introActive&&introDialog===d)fn()},ms));
- const animate=(el,frames,options)=>{const a=el.animate(frames,{fill:'both',...options});introAnimations.push(a);return a};
- const glyphs=Array.from(d.querySelectorAll('.intro-glyph')),o=d.querySelector('.intro-o'),ring=d.querySelector('.intro-ring');let shift=0;
- const bounce=Array.from({length:81},(_,i)=>{const u=i/80,t=u*1.15,z=.32,w=17.5,wd=w*Math.sqrt(1-z*z);let spring=1-Math.exp(-z*w*t)*(Math.cos(wd*t)+(z/Math.sqrt(1-z*z))*Math.sin(wd*t));if(i===80)spring=1;return {offset:u,opacity:Math.min(1,t/.075),transform:`translateY(${85*(1-spring)}px) scale(${.48+.52*spring},${1.32-.32*spring})`}});
- glyphs.forEach((el,i)=>animate(el,bounce,{duration:1150,delay:i*170,easing:'linear'}));
- later(()=>{d.dataset.phase='letter-o';glyphs.slice(0,2).forEach((el,i)=>animate(el,[{opacity:1,transform:'translateY(0) scale(1)'},{offset:.4,opacity:.6,transform:'translateY(-12px) scale(.94)'},{opacity:0,transform:'translateY(18px) scale(.7)'}],{duration:420,delay:i*85,easing:'cubic-bezier(.3,0,.2,1)'}));
-  const rect=o.getBoundingClientRect();shift=innerWidth/2-(rect.left+rect.width/2);animate(o,[{transform:'translateX(0) scale(1)'},{offset:.58,transform:`translateX(${shift*1.065}px) scale(1.045,.98)`},{offset:.82,transform:`translateX(${shift*.98}px) scale(.99,1.015)`},{transform:`translateX(${shift}px) scale(1)`}],{duration:650,easing:'linear'});
- },1700);
- later(()=>{d.dataset.phase='contract';const start=performance.now(),width=o.getBoundingClientRect().width,dotScale=14/(width*.84);o.style.color='var(--blue)';
-  function closeRing(now){if(!introActive||introDialog!==d)return;const p=Math.min(1,(now-start)/500),t=p*p*(3-2*p);ring.setAttribute('r',String(34-13*t));ring.setAttribute('stroke-width',String(16+26*t));if(p<1)introShapeRAF=requestAnimationFrame(closeRing)}introShapeRAF=requestAnimationFrame(closeRing);
-  animate(o,[{transform:`translateX(${shift}px) scale(1)`},{offset:.22,transform:`translateX(${shift}px) scale(.94)`},{offset:.68,transform:`translateX(${shift}px) scale(${Math.max(dotScale*2,.2)})`},{offset:.88,transform:`translateX(${shift}px) scale(${dotScale*.85})`},{transform:`translateX(${shift}px) scale(${dotScale})`}],{duration:1000,easing:'cubic-bezier(.35,0,.2,1)'});
-  later(()=>{d.dataset.phase='dot';animate(o,[{transform:`translateX(${shift}px) scale(${dotScale})`},{offset:.35,transform:`translate(${shift}px,-3px) scale(${dotScale*1.32},${dotScale*.86})`},{offset:.7,transform:`translate(${shift}px,1px) scale(${dotScale*.94},${dotScale*1.06})`},{transform:`translateX(${shift}px) scale(${dotScale})`}],{duration:340,easing:'linear'})},1000);
- },2850);
- let modelsStarted=false;
- function startModels(){if(modelsStarted||!introActive||introDialog!==d)return;modelsStarted=true;d.dataset.phase='models';animate(d.querySelector('.intro-stage'),[{opacity:1},{opacity:0}],{duration:120});
-  const frames=Array.from(d.querySelectorAll('.intro-models img'));frames[0].classList.add('is-current');for(let i=1;i<frames.length;i++)later(()=>{frames.forEach((im,k)=>im.classList.toggle('is-current',k===i))},i*160);
-  later(()=>{d.dataset.phase='exit';animate(d,[{opacity:1},{opacity:0}],{duration:450,easing:'ease-out'})},frames.length*160);
-  later(finishIntro,frames.length*160+460)
+ const d=document.createElement('dialog');introDialog=d;d.className='ddo-intro intro-v3';d.tabIndex=0;
+ d.setAttribute('aria-label',text('D Design Office opening. Click anywhere or press Enter to enter.','D Design Office 开场。点击任意位置或按回车进入。'));
+ d.innerHTML='<canvas class="intro-canvas" aria-hidden="true"></canvas>';
+ document.body.append(d);d.showModal();d.focus({preventScroll:true});
+ introAbort=new AbortController();const signal=introAbort.signal;
+ const canvas=d.querySelector('canvas'),ctx=canvas.getContext('2d',{alpha:true});
+ let W=innerWidth,H=innerHeight,DPR=Math.min(devicePixelRatio||1,2),models=[],ready=false,elapsed=0,last=0;
+ let scatter=null,phase='',logoRect=null;
+ const ink=getComputedStyle(document.body).getPropertyValue('--ink').trim()||'#342d27';
+ const blue=getComputedStyle(document.body).getPropertyValue('--blue').trim()||'#b6cfe9',brandColor=getComputedStyle($('.brand')).color;
+ const clamp=v=>Math.max(0,Math.min(1,v)),smooth=v=>{v=clamp(v);return v*v*(3-2*v)},mix=(a,b,t)=>a+(b-a)*t;
+ const spring=(t,damping=7.5,frequency=15)=>t<=0?0:1-Math.exp(-damping*t)*(Math.cos(frequency*t)+damping/frequency*Math.sin(frequency*t));
+ const setPhase=p=>{if(phase!==p){phase=p;d.dataset.phase=p}};
+ function resize(){W=innerWidth;H=innerHeight;DPR=Math.min(devicePixelRatio||1,2);canvas.width=Math.round(W*DPR);canvas.height=Math.round(H*DPR);canvas.style.width=W+'px';canvas.style.height=H+'px';logoRect=$('.brand .logo-symbol').getBoundingClientRect();}
+ resize();window.addEventListener('resize',resize,{signal});
+ function modelBox(frame){
+  const [, ,cw,ch]=frame.crop;
+  const maxW=Math.min(W*.87,1180),maxH=H*(W<760?.64:.79);
+  // Equal optical area, bounded by a common centred display envelope.
+  const area=maxW*maxH*.82,scale=Math.min(Math.sqrt(area/(cw*ch)),maxW/cw,maxH/ch);
+  return {w:cw*scale,h:ch*scale};
  }
- const decoded=Promise.all(Array.from(d.querySelectorAll('.intro-models img')).map(im=>im.decode().catch(()=>{})));
- decoded.then(()=>later(startModels,Math.max(0,4350-(performance.now()-born))));later(startModels,5500);
+ function model(frame,scale=1,alpha=1,cx=W/2,cy=H/2){
+  if(!frame||alpha<=0)return;const b=modelBox(frame),[sx,sy,sw,sh]=frame.crop;
+  ctx.save();ctx.globalAlpha=alpha;ctx.drawImage(frame.img,sx,sy,sw,sh,cx-b.w*scale/2,cy-b.h*scale/2,b.w*scale,b.h*scale);ctx.restore();
+ }
+ function circle(x,y,r,inner=0,color=ink,alpha=1){
+  if(r<=0||alpha<=0)return;ctx.save();ctx.globalAlpha=alpha;ctx.fillStyle=color;ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);
+  if(inner>0){ctx.moveTo(x+inner,y);ctx.arc(x,y,inner,0,Math.PI*2,true)}ctx.fill('evenodd');ctx.restore();
+ }
+ function letterD(x,y,h,sx,sy,alpha){
+  const w=h*.68,stroke=h*.155;ctx.save();ctx.globalAlpha=alpha;ctx.translate(x,y);ctx.scale(sx,sy);ctx.translate(-w/2,-h/2);
+  ctx.fillStyle=ink;ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo(w*.32,0);ctx.bezierCurveTo(w*1.22,0,w*1.22,h,w*.32,h);ctx.lineTo(0,h);ctx.closePath();
+  ctx.moveTo(stroke,stroke);ctx.lineTo(stroke,h-stroke);ctx.lineTo(w*.32,h-stroke);ctx.bezierCurveTo(w*.92,h-stroke,w*.92,stroke,w*.32,stroke);ctx.closePath();ctx.fill('evenodd');ctx.restore();
+ }
+ function word(t){
+  const h=Math.min(W*(W<760?.26:.19),H*.24,172),gap=h*.14,step=h*.76+gap,baseO=W/2+step;
+  for(let i=0;i<2;i++){
+   const time=Math.max(0,t-i*105)/1000,b=spring(time),out=smooth((t-1450-i*45)/480);
+   letterD(W/2-step+i*step,H/2+(1-b)*65+out*16,h,(.68+.32*b)*(1-out*.12),1.2-.2*b,clamp(time*11)*(1-out));
+  }
+  const ot=Math.max(0,t-210)/1000,b=spring(ot),travel=spring(Math.max(0,t-1510)/1000,8,11);
+  const ox=mix(baseO,W/2,travel),oy=H/2+(1-b)*65;
+  const contraction=smooth((t-2240)/710),outer=mix(h*.48,7,contraction),hole=(h*.48-h*.155)*(1-smooth((t-2240)/500));
+  const ct=smooth(contraction*1.8),color=`rgb(${mix(52,182,ct)},${mix(45,207,ct)},${mix(39,233,ct)})`;
+  ctx.save();ctx.translate(ox,oy);ctx.scale(.68+.32*b,1.2-.2*b);circle(0,0,outer,Math.min(hole,outer*.83),color,clamp(ot*11));ctx.restore();
+ }
+ function makePieces(originX=W/2,originY=H/2){
+  const cols=W<760?4:7,rows=W<760?7:5,points=[],pieces=[];
+  for(let y=0;y<=rows;y++){points[y]=[];for(let x=0;x<=cols;x++){const jitter=Math.sin(x*61.7+y*37.1);points[y][x]=[x*W/cols+(x&&x<cols?jitter*W/cols*.21:0),y*H/rows+(y&&y<rows?Math.cos(x*43+y*19)*H/rows*.2:0)]}}
+  for(let y=0;y<rows;y++)for(let x=0;x<cols;x++){
+   const a=points[y][x],b=points[y][x+1],c=points[y+1][x+1],e=points[y+1][x];
+   for(const p of [[a,b,c],[a,c,e]]){const cx=p.reduce((n,v)=>n+v[0],0)/3,cy=p.reduce((n,v)=>n+v[1],0)/3,dist=Math.hypot(cx-originX,cy-originY),angle=Math.atan2(cy-originY,cx-originX);
+    pieces.push({p,cx,cy,delay:dist/Math.hypot(W,H)*.24,dx:Math.cos(angle)*(12+dist*.04),dy:Math.sin(angle)*(12+dist*.04)-9,rotation:Math.sin(cx+cy)*.075,
+     x:Math.min(...p.map(v=>v[0])),y:Math.min(...p.map(v=>v[1])),w:Math.max(...p.map(v=>v[0]))-Math.min(...p.map(v=>v[0])),h:Math.max(...p.map(v=>v[1]))-Math.min(...p.map(v=>v[1]))});
+   }
+  }return pieces;
+ }
+ const whitePieces=makePieces();
+ function fragments(pieces,t,source=null){
+  ctx.save();ctx.globalAlpha=.6*(1-smooth(t*1.25));ctx.fillStyle='#fff';ctx.fillRect(0,0,W,H);ctx.restore();
+  for(const piece of pieces){const u=smooth((t-piece.delay)/.79);if(u>=1)continue;ctx.save();ctx.globalAlpha=Math.pow(1-u,1.4);ctx.translate(piece.cx+piece.dx*u,piece.cy+piece.dy*u);ctx.rotate(piece.rotation*u);ctx.scale(1-u*.055,1-u*.055);ctx.translate(-piece.cx,-piece.cy);ctx.beginPath();piece.p.forEach((v,i)=>i?ctx.lineTo(...v):ctx.moveTo(...v));ctx.closePath();
+   if(source){ctx.clip();ctx.drawImage(source,piece.x*DPR,piece.y*DPR,piece.w*DPR,piece.h*DPR,piece.x,piece.y,piece.w,piece.h)}else{ctx.fillStyle='#fff';ctx.fill()}ctx.restore();
+  }
+ }
+ function drawLogo(x,y,w,h,alpha=1){
+  const s=Math.min(w/94,h/82);ctx.save();ctx.globalAlpha=alpha;ctx.translate(x+(w-94*s)/2,y+(h-82*s)/2);ctx.scale(s,s);
+  ctx.fillStyle=blue;ctx.beginPath();ctx.moveTo(5,3);ctx.lineTo(40,3);ctx.arc(40,41,38,-Math.PI/2,Math.PI/2);ctx.lineTo(5,79);ctx.closePath();ctx.fill();
+  ctx.fillStyle=brandColor;ctx.font='600 24px Jost';ctx.textBaseline='alphabetic';
+  if('letterSpacing' in ctx){ctx.letterSpacing='12px';ctx.fillText('DDO',4,52);ctx.letterSpacing='0px'}else{let xx=4;for(const l of 'DDO'){ctx.fillText(l,xx,52);xx+=ctx.measureText(l).width+12}}
+  ctx.restore();
+ }
+ function handover(t){
+  const p=smooth(t/1510),travel=1-Math.pow(1-p,2),frame=models[models.length-1],b=modelBox(frame);
+  fragments(whitePieces,Math.max(0,t-160)/1100);
+  const cx=mix(W/2,logoRect.x+logoRect.width/2,travel),cy=mix(H/2,logoRect.y+logoRect.height/2,travel)-Math.sin(p*Math.PI)*Math.min(45,H*.06);
+  const w=mix(b.w,logoRect.width,travel),h=mix(b.h,logoRect.height,travel),blueIn=smooth((p-.1)/.63),logoIn=smooth((p-.43)/.45);
+  ctx.save();ctx.translate(cx-w/2,cy-h/2);ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo(w*(1-p*.55),0);ctx.bezierCurveTo(w,0,w,h,w*(1-p*.55),h);ctx.lineTo(0,h);ctx.closePath();ctx.clip();
+  ctx.fillStyle='#fff';ctx.fillRect(0,0,w,h);ctx.globalAlpha=1-blueIn;ctx.drawImage(frame.img,...frame.crop,0,0,w,h);ctx.globalAlpha=blueIn*(1-logoIn);ctx.fillStyle=blue;ctx.fillRect(0,0,w,h);ctx.restore();
+  drawLogo(cx-w/2,cy-h/2,w,h,logoIn);
+ }
+ function enter(e){
+  if(scatter||!introActive)return;e?.preventDefault();e?.stopPropagation();
+  const snapshot=document.createElement('canvas');snapshot.width=canvas.width;snapshot.height=canvas.height;snapshot.getContext('2d').drawImage(canvas,0,0);
+  scatter={source:snapshot,time:0,pieces:makePieces(e?.clientX||W/2,e?.clientY||H/2)};document.body.classList.add('intro-entering');setPhase('dissolve');
+ }
+ d.addEventListener('click',enter,{signal});d.addEventListener('cancel',enter,{signal});
+ d.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){enter(e)}},{signal});
+ Promise.all([loadIntroModels(),document.fonts.load('600 24px Jost').catch(()=>{})]).then(([frames])=>{
+  if(!introActive||introDialog!==d)return;models=frames;ready=true;elapsed=0;try{sessionStorage.setItem('ddo-intro-20261110b','1')}catch{}
+ });
+ function frame(now){
+  if(!introActive||introDialog!==d)return;
+  const dt=last?Math.min(50,now-last):0;last=now;ctx.setTransform(DPR,0,0,DPR,0,0);ctx.clearRect(0,0,W,H);
+  if(scatter){scatter.time+=dt;fragments(scatter.pieces,scatter.time/950,scatter.source);if(scatter.time>=1050){finishIntro();return}}
+  else if(!ready){setPhase('loading');ctx.fillStyle='#fff';ctx.fillRect(0,0,W,H);circle(W/2,H/2,6+Math.sin(now/350)*1.2,0,blue)}
+  else{
+   elapsed+=dt;const modelStart=3650,modelEnd=modelStart+models.length*175+280,flightEnd=modelEnd+1540;
+   if(elapsed<modelEnd){ctx.fillStyle='#fff';ctx.fillRect(0,0,W,H)}
+   if(elapsed<3090){setPhase(elapsed<1510?'word':elapsed<2240?'letter-o':'dot');word(elapsed)}
+   else if(!models.length){finishIntro();return}
+   else if(elapsed<modelStart){
+    setPhase('dot-to-model');const t=(elapsed-3090)/560,b=spring(t*.92,7,10),radius=mix(7,Math.hypot(W,H)*.57,clamp(b));
+    circle(W/2,H/2,mix(7,22,smooth(t)),0,blue,1-smooth(t*2));ctx.save();ctx.beginPath();ctx.arc(W/2,H/2,radius,0,Math.PI*2);ctx.clip();model(models[0],mix(.64,1,b),smooth(t*1.8));ctx.restore();
+   }else if(elapsed<modelEnd){
+    setPhase('models');const at=(elapsed-modelStart)/175,index=Math.min(models.length-1,Math.floor(at)),fraction=at-Math.floor(at);d.dataset.model=String(index+1);
+    model(models[index]);if(index>0&&fraction<.33)model(models[index-1],1,1-smooth(fraction/.33));
+   }else if(elapsed<flightEnd){setPhase('model-to-logo');handover(elapsed-modelEnd)}
+   else{finishIntro();return}
+  }
+  introRAF=requestAnimationFrame(frame);
+ }
+ introRAF=requestAnimationFrame(frame);
 }
 
-let pointerRAF=0,px=0,py=0,tx=0,ty=0;
-function bindPointerFlow(){if(PAGE==='home'||reduced.matches||!matchMedia('(pointer:fine)').matches)return;function tick(){px+=(tx-px)*.075;py+=(ty-py)*.075;document.body.style.setProperty('--mouse-x',px.toFixed(4));document.body.style.setProperty('--mouse-y',py.toFixed(4));if(Math.abs(tx-px)+Math.abs(ty-py)>.001)pointerRAF=requestAnimationFrame(tick);else pointerRAF=0}document.addEventListener('pointermove',e=>{tx=(e.clientX/innerWidth-.5)*2;ty=(e.clientY/innerHeight-.5)*2;if(!pointerRAF)pointerRAF=requestAnimationFrame(tick)},{passive:true});document.addEventListener('pointerleave',()=>{tx=0;ty=0;if(!pointerRAF)pointerRAF=requestAnimationFrame(tick)})}
+let pointerRAF=0;
+function bindPointerFlow(){
+ if(reduced.matches||!matchMedia('(pointer:fine)').matches)return;
+ let cursor=null,x=0,y=0;
+ const target=e=>e instanceof Element?e.closest('a,button,summary,[role="button"]'):null;
+ function ensure(){if(!cursor?.isConnected){cursor=document.createElement('div');cursor.className='flow-cursor';cursor.setAttribute('aria-hidden','true');document.body.append(cursor)}document.body.classList.add('has-flow-cursor');return cursor}
+ document.addEventListener('pointermove',e=>{if(e.pointerType!=='mouse')return;x=e.clientX;y=e.clientY;const c=ensure();c.classList.add('is-visible');c.classList.toggle('is-over',!!target(e.target));if(!pointerRAF)pointerRAF=requestAnimationFrame(()=>{c.style.transform=`translate3d(${x}px,${y}px,0)`;pointerRAF=0})},{passive:true});
+ document.addEventListener('pointerover',e=>{if(cursor)cursor.classList.toggle('is-over',!!target(e.target))},{passive:true});
+ document.addEventListener('pointerout',e=>{if(cursor)cursor.classList.toggle('is-over',!!target(e.relatedTarget))},{passive:true});
+ document.addEventListener('pointerleave',()=>cursor?.classList.remove('is-visible'));
+ window.addEventListener('blur',()=>cursor?.classList.remove('is-visible'));
+ reduced.addEventListener('change',e=>{if(e.matches){cursor?.remove();document.body.classList.remove('has-flow-cursor')}});
+}
 
 function studio(){return `<main id="main" class="page studio-page"><p class="eyebrow">${dot}${text('THE PRACTICE','关于我们')}</p><div class="studio-heading"><h1>${text('Two disciplines.<br>One vision.','两种专长，<br>一个愿景。')}</h1><div class="studio-sign" aria-hidden="true"><i></i></div></div><div class="studio-layout"><img src="${image('p05-00')}" alt="Yappari Steak interior" width="1602" height="842"><div class="studio-copy"><h2>${text('From the first sketch<br>to the first guest.','从第一笔草图，<br>到第一位来客。')}</h2><p>${text('D Design Office and D Construction Office are sister studios based in Sydney, devoted to interior architecture and its realisation. We work with the belief that a space is never finished at the drawing. It is finished when it is lived in.','D Design Office 与 D Construction Office 是位于悉尼的姊妹工作室，专注于室内建筑设计及其落地。我们相信，空间并不止于图纸；当人们走入其中，生活开始，设计才真正完整。')}</p><p>${text('Movement, ritual, light and material shape our work. DDO leads creative direction, interior architecture and documentation. DCO carries that vision into the built work — from first sketch to final handover.','人的动线、日常习惯、光线与材质，共同塑造我们的作品。DDO 负责创意方向、室内建筑设计与设计文件；DCO 将愿景落实为真实空间，从最初的草图一路走到交付。')}</p><a class="text-link" href="https://dconstructionoffice.com/" target="_blank" rel="noopener">D Construction Office ${arrow()}</a></div></div>${teamSection()}<div class="studio-principles"><div><span>01 / ${text('OBSERVE','观察')}</span><h3>${text('Begin with people.','从人出发。')}</h3><p>${text('Listen to how a place will be used, before deciding how it will look.','先理解一个空间如何被使用，再思考它的模样。')}</p></div><div><span>02 / ${text('EXPLORE','探索')}</span><h3>${text('Leave room for play.','给玩心留白。')}</h3><p>${text('Find character in light, material and the unexpected detail.','在光线、材质与意外的细节里，发现独特的性格。')}</p></div><div><span>03 / ${text('REALISE','实现')}</span><h3>${text('Carry the idea through.','让想法抵达。')}</h3><p>${text('A close conversation between design and construction, all the way to handover.','让设计与建造始终保持对话，直至空间交付。')}</p></div></div><a class="next-project" href="${url('contact/')}"><span>${text('START SOMETHING','开启新的故事')}</span><h2>${text('What do you have in mind?','你正在想象什么？')}</h2>${arrow()}</a></main>`}
 function contact(){return `<main id="main" class="page contact-page"><p class="eyebrow">${dot}${text('EVERY SPACE BEGINS WITH A CONVERSATION','每一个空间，都始于对话')}</p><h1>${text('Something<br>in mind<span class="heading-dot">?</span>','心中，<br>已有想法<span class="heading-dot">？</span>')}</h1><div class="contact-layout"><p>${text('A new place. A different perspective.<br>We’d love to hear what you’re imagining.','一个新空间，一种新视角。<br>我们期待听听你的想象。')}</p><div class="contact-links"><a class="contact-email" href="mailto:info@ddesignoffice.com">info@ddesignoffice.com ${arrow()}</a><button id="copy-email">${text('Copy email address','复制邮箱地址')}</button><span id="copy-result" role="status"></span><div class="contact-external"><a href="https://www.instagram.com/ddesignoffice/" target="_blank" rel="noopener">Instagram ${arrow()}</a><a href="https://dconstructionoffice.com/" target="_blank" rel="noopener">D Construction Office ${arrow()}</a></div><p>${text('BASED IN SYDNEY, AUSTRALIA','澳大利亚 · 悉尼')}</p></div></div><div class="contact-shape" aria-hidden="true"></div></main>`}
