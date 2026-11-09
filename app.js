@@ -73,17 +73,24 @@ function finishIntro(){
 }
 function loadIntroModels(){
  if(!introAssets)introAssets=Promise.all(modelCrops.map((crop,i)=>new Promise(resolve=>{
-  const img=new Image();img.decoding='async';let settled=false;
-  const done=value=>{if(!settled){settled=true;resolve(value)}};
+  const img=new Image();img.decoding='async';let settled=false,retry=0,timeout=null;
+  const done=value=>{if(!settled){settled=true;clearTimeout(timeout);resolve(value)}};
+  const source=url('assets/model-large-'+String(i+1).padStart(2,'0')+'.webp')+'?v=20261110c';
   img.onload=()=>img.decode().catch(()=>{}).then(()=>done({img,crop}));
-  img.onerror=()=>done(null);img.src=url('assets/model-large-'+String(i+1).padStart(2,'0')+'.webp');
-  setTimeout(()=>done(null),10000);
+  img.onerror=()=>{if(retry++===0)img.src=source+'&retry=1';else done(null)};
+  timeout=setTimeout(()=>done(img.complete&&img.naturalWidth?{img,crop}:null),12000);img.src=source;
  }))).then(items=>items.filter(Boolean));
  return introAssets;
 }
+const introFrameStep=220,introFrameBlend=150;
+// Use time since the actual frame index, so the last hold never loops a previous-frame blend.
+function introModelBlend(elapsed,count){
+ const time=Math.max(0,elapsed),index=Math.min(count-1,Math.floor(time/introFrameStep));
+ return {index,fraction:Math.min(1,(time-index*introFrameStep)/introFrameBlend)};
+}
 function playIntro(force=false){
  if(reduced.matches||introActive)return;
- try{if(!force&&sessionStorage.getItem('ddo-intro-20261110b'))return}catch{}
+ try{if(!force&&sessionStorage.getItem('ddo-intro-20261110c'))return}catch{}
  introActive=true;cancelAnimationFrame(timer);document.body.classList.add('intro-open');syncVideo();
  const d=document.createElement('dialog');introDialog=d;d.className='ddo-intro intro-v3';d.tabIndex=0;
  d.setAttribute('aria-label',text('D Design Office opening. Click anywhere or press Enter to enter.','D Design Office 开场。点击任意位置或按回车进入。'));
@@ -92,13 +99,14 @@ function playIntro(force=false){
  introAbort=new AbortController();const signal=introAbort.signal;
  const canvas=d.querySelector('canvas'),ctx=canvas.getContext('2d',{alpha:true});
  let W=innerWidth,H=innerHeight,DPR=Math.min(devicePixelRatio||1,2),models=[],ready=false,elapsed=0,last=0;
- let scatter=null,phase='',logoRect=null;
+ let scatter=null,phase='',logoRect=null;const modelLayers=new Map();
  const ink=getComputedStyle(document.body).getPropertyValue('--ink').trim()||'#342d27';
  const blue=getComputedStyle(document.body).getPropertyValue('--blue').trim()||'#b6cfe9',brandColor=getComputedStyle($('.brand')).color;
  const clamp=v=>Math.max(0,Math.min(1,v)),smooth=v=>{v=clamp(v);return v*v*(3-2*v)},mix=(a,b,t)=>a+(b-a)*t;
+ const smoother=v=>{v=clamp(v);return v*v*v*(v*(v*6-15)+10)};
  const spring=(t,damping=7.5,frequency=15)=>t<=0?0:1-Math.exp(-damping*t)*(Math.cos(frequency*t)+damping/frequency*Math.sin(frequency*t));
  const setPhase=p=>{if(phase!==p){phase=p;d.dataset.phase=p}};
- function resize(){W=innerWidth;H=innerHeight;DPR=Math.min(devicePixelRatio||1,2);canvas.width=Math.round(W*DPR);canvas.height=Math.round(H*DPR);canvas.style.width=W+'px';canvas.style.height=H+'px';logoRect=$('.brand .logo-symbol').getBoundingClientRect();}
+ function resize(){modelLayers.clear();W=innerWidth;H=innerHeight;DPR=Math.min(devicePixelRatio||1,2);canvas.width=Math.round(W*DPR);canvas.height=Math.round(H*DPR);canvas.style.width=W+'px';canvas.style.height=H+'px';logoRect=$('.brand .logo-symbol').getBoundingClientRect();}
  resize();window.addEventListener('resize',resize,{signal});
  function modelBox(frame){
   const [, ,cw,ch]=frame.crop;
@@ -111,6 +119,22 @@ function playIntro(force=false){
   if(!frame||alpha<=0)return;const b=modelBox(frame),[sx,sy,sw,sh]=frame.crop;
   ctx.save();ctx.globalAlpha=alpha;ctx.drawImage(frame.img,sx,sy,sw,sh,cx-b.w*scale/2,cy-b.h*scale/2,b.w*scale,b.h*scale);ctx.restore();
  }
+ // Composite full white-backed frames, so incoming parts outside the previous model's bounds never pop on.
+ function modelLayer(index){
+  if(modelLayers.has(index))return modelLayers.get(index);
+  const layer=document.createElement('canvas');layer.width=canvas.width;layer.height=canvas.height;
+  const painter=layer.getContext('2d'),frame=models[index],b=modelBox(frame);painter.scale(DPR,DPR);painter.fillStyle='#fff';painter.fillRect(0,0,W,H);
+  painter.drawImage(frame.img,...frame.crop,W/2-b.w/2,H/2-b.h/2,b.w,b.h);
+  modelLayers.set(index,layer);for(const key of modelLayers.keys())if(key<index-1||key>index+1)modelLayers.delete(key);
+  return layer;
+ }
+ function flowingModels(index,p){
+  if(index===0){ctx.drawImage(modelLayer(0),0,0,W,H);return}
+  const outgoing=modelLayer(index-1),incoming=modelLayer(index),blend=smoother(p);
+  const tension=Math.sin(Math.PI*p),arrival=mix(spring(p*.38,10,16),1,smoother((p-.65)/.35));
+  ctx.save();ctx.translate(W/2,H/2);ctx.scale(1+.018*tension,1-.014*tension);ctx.drawImage(outgoing,-W/2,-H/2,W,H);ctx.restore();
+  ctx.save();ctx.globalAlpha=blend;ctx.translate(W/2,H/2);ctx.scale(.965+.035*arrival,1.03-.03*arrival);ctx.drawImage(incoming,-W/2,-H/2,W,H);ctx.restore();
+ }
  function circle(x,y,r,inner=0,color=ink,alpha=1){
   if(r<=0||alpha<=0)return;ctx.save();ctx.globalAlpha=alpha;ctx.fillStyle=color;ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);
   if(inner>0){ctx.moveTo(x+inner,y);ctx.arc(x,y,inner,0,Math.PI*2,true)}ctx.fill('evenodd');ctx.restore();
@@ -122,15 +146,20 @@ function playIntro(force=false){
  }
  function word(t){
   const h=Math.min(W*(W<760?.26:.19),H*.24,172),gap=h*.14,step=h*.76+gap,baseO=W/2+step;
+  // Every letter completes its initial spring before the third O begins to travel.
+  const settled=t=>mix(spring(t),1,smoother((t-.85)/.5));
   for(let i=0;i<2;i++){
-   const time=Math.max(0,t-i*105)/1000,b=spring(time),out=smooth((t-1450-i*45)/480);
-   letterD(W/2-step+i*step,H/2+(1-b)*65+out*16,h,(.68+.32*b)*(1-out*.12),1.2-.2*b,clamp(time*11)*(1-out));
+   const time=Math.max(0,t-i*105)/1000,b=settled(time),out=smoother((t-1780-i*35)/480);
+   letterD(W/2-step+i*step,H/2+(1-b)*65,h,.68+.32*b,1.2-.2*b,clamp(time*11)*(1-out));
   }
-  const ot=Math.max(0,t-210)/1000,b=spring(ot),travel=spring(Math.max(0,t-1510)/1000,8,11);
+  // This is the original third glyph throughout: no replacement, fade or size change during travel.
+  const ot=Math.max(0,t-210)/1000,b=settled(ot),move=clamp((t-1600)/900);
+  const travel=move<.78?1.012*smoother(move/.78):mix(1.012,1,smoother((move-.78)/.22));
   const ox=mix(baseO,W/2,travel),oy=H/2+(1-b)*65;
-  const contraction=smooth((t-2240)/710),outer=mix(h*.48,7,contraction),hole=(h*.48-h*.155)*(1-smooth((t-2240)/500));
-  const ct=smooth(contraction*1.8),color=`rgb(${mix(52,182,ct)},${mix(45,207,ct)},${mix(39,233,ct)})`;
-  ctx.save();ctx.translate(ox,oy);ctx.scale(.68+.32*b,1.2-.2*b);circle(0,0,outer,Math.min(hole,outer*.83),color,clamp(ot*11));ctx.restore();
+  const contraction=smoother((t-2640)/680),outer=mix(h*.48,7,contraction);
+  const hole=outer*(1-.155/.48)*(1-smoother(contraction/.8));
+  const ct=smoother(contraction*1.6),color=`rgb(${mix(52,182,ct)},${mix(45,207,ct)},${mix(39,233,ct)})`;
+  ctx.save();ctx.translate(ox,oy);ctx.scale(.68+.32*b,1.2-.2*b);circle(0,0,outer,hole,color,clamp(ot*11));ctx.restore();
  }
  function makePieces(originX=W/2,originY=H/2){
   const cols=W<760?4:7,rows=W<760?7:5,points=[],pieces=[];
@@ -145,7 +174,7 @@ function playIntro(force=false){
  }
  const whitePieces=makePieces();
  function fragments(pieces,t,source=null){
-  ctx.save();ctx.globalAlpha=.6*(1-smooth(t*1.25));ctx.fillStyle='#fff';ctx.fillRect(0,0,W,H);ctx.restore();
+  ctx.save();ctx.globalAlpha=1-smoother(t/.74);if(source)ctx.drawImage(source,0,0,W,H);else{ctx.fillStyle='#fff';ctx.fillRect(0,0,W,H)}ctx.restore();
   for(const piece of pieces){const u=smooth((t-piece.delay)/.79);if(u>=1)continue;ctx.save();ctx.globalAlpha=Math.pow(1-u,1.4);ctx.translate(piece.cx+piece.dx*u,piece.cy+piece.dy*u);ctx.rotate(piece.rotation*u);ctx.scale(1-u*.055,1-u*.055);ctx.translate(-piece.cx,-piece.cy);ctx.beginPath();piece.p.forEach((v,i)=>i?ctx.lineTo(...v):ctx.moveTo(...v));ctx.closePath();
    if(source){ctx.clip();ctx.drawImage(source,piece.x*DPR,piece.y*DPR,piece.w*DPR,piece.h*DPR,piece.x,piece.y,piece.w,piece.h)}else{ctx.fillStyle='#fff';ctx.fill()}ctx.restore();
   }
@@ -174,7 +203,7 @@ function playIntro(force=false){
  d.addEventListener('click',enter,{signal});d.addEventListener('cancel',enter,{signal});
  d.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){enter(e)}},{signal});
  Promise.all([loadIntroModels(),document.fonts.load('600 24px Jost').catch(()=>{})]).then(([frames])=>{
-  if(!introActive||introDialog!==d)return;models=frames;ready=true;elapsed=0;try{sessionStorage.setItem('ddo-intro-20261110b','1')}catch{}
+  if(!introActive||introDialog!==d)return;models=frames;d.dataset.frames=String(frames.length);ready=true;elapsed=0;try{sessionStorage.setItem('ddo-intro-20261110c','1')}catch{}
  });
  function frame(now){
   if(!introActive||introDialog!==d)return;
@@ -182,36 +211,22 @@ function playIntro(force=false){
   if(scatter){scatter.time+=dt;fragments(scatter.pieces,scatter.time/950,scatter.source);if(scatter.time>=1050){finishIntro();return}}
   else if(!ready){setPhase('loading');ctx.fillStyle='#fff';ctx.fillRect(0,0,W,H);circle(W/2,H/2,6+Math.sin(now/350)*1.2,0,blue)}
   else{
-   elapsed+=dt;const modelStart=3650,modelEnd=modelStart+models.length*175+280,flightEnd=modelEnd+1540;
+   elapsed+=dt;const modelStart=4220,modelEnd=modelStart+Math.max(0,models.length-1)*introFrameStep+introFrameBlend+320,flightEnd=modelEnd+1540;
    if(elapsed<modelEnd){ctx.fillStyle='#fff';ctx.fillRect(0,0,W,H)}
-   if(elapsed<3090){setPhase(elapsed<1510?'word':elapsed<2240?'letter-o':'dot');word(elapsed)}
+   if(elapsed<3500){setPhase(elapsed<1600?'word':elapsed<2640?'letter-o':elapsed<3320?'o-to-dot':'dot');word(elapsed)}
    else if(!models.length){finishIntro();return}
    else if(elapsed<modelStart){
-    setPhase('dot-to-model');const t=(elapsed-3090)/560,b=spring(t*.92,7,10),radius=mix(7,Math.hypot(W,H)*.57,clamp(b));
-    circle(W/2,H/2,mix(7,22,smooth(t)),0,blue,1-smooth(t*2));ctx.save();ctx.beginPath();ctx.arc(W/2,H/2,radius,0,Math.PI*2);ctx.clip();model(models[0],mix(.64,1,b),smooth(t*1.8));ctx.restore();
+    setPhase('dot-to-model');const t=clamp((elapsed-3500)/720),b=mix(spring(t*1.1,8,10),1,smoother((t-.62)/.38)),radius=mix(7,Math.hypot(W,H)*.57,smoother(t));
+    circle(W/2,H/2,mix(7,22,smooth(t)),0,blue,1-smooth(t*2));ctx.save();ctx.beginPath();ctx.arc(W/2,H/2,radius,0,Math.PI*2);ctx.clip();model(models[0],mix(.08,1,b),smoother(t*1.8));ctx.restore();
    }else if(elapsed<modelEnd){
-    setPhase('models');const at=(elapsed-modelStart)/175,index=Math.min(models.length-1,Math.floor(at)),fraction=at-Math.floor(at);d.dataset.model=String(index+1);
-    model(models[index]);if(index>0&&fraction<.33)model(models[index-1],1,1-smooth(fraction/.33));
+    setPhase('models');const {index,fraction}=introModelBlend(elapsed-modelStart,models.length);d.dataset.model=String(index+1);
+    flowingModels(index,fraction);
    }else if(elapsed<flightEnd){setPhase('model-to-logo');handover(elapsed-modelEnd)}
    else{finishIntro();return}
   }
   introRAF=requestAnimationFrame(frame);
  }
  introRAF=requestAnimationFrame(frame);
-}
-
-let pointerRAF=0;
-function bindPointerFlow(){
- if(reduced.matches||!matchMedia('(pointer:fine)').matches)return;
- let cursor=null,x=0,y=0;
- const target=e=>e instanceof Element?e.closest('a,button,summary,[role="button"]'):null;
- function ensure(){if(!cursor?.isConnected){cursor=document.createElement('div');cursor.className='flow-cursor';cursor.setAttribute('aria-hidden','true');document.body.append(cursor)}document.body.classList.add('has-flow-cursor');return cursor}
- document.addEventListener('pointermove',e=>{if(e.pointerType!=='mouse')return;x=e.clientX;y=e.clientY;const c=ensure();c.classList.add('is-visible');c.classList.toggle('is-over',!!target(e.target));if(!pointerRAF)pointerRAF=requestAnimationFrame(()=>{c.style.transform=`translate3d(${x}px,${y}px,0)`;pointerRAF=0})},{passive:true});
- document.addEventListener('pointerover',e=>{if(cursor)cursor.classList.toggle('is-over',!!target(e.target))},{passive:true});
- document.addEventListener('pointerout',e=>{if(cursor)cursor.classList.toggle('is-over',!!target(e.relatedTarget))},{passive:true});
- document.addEventListener('pointerleave',()=>cursor?.classList.remove('is-visible'));
- window.addEventListener('blur',()=>cursor?.classList.remove('is-visible'));
- reduced.addEventListener('change',e=>{if(e.matches){cursor?.remove();document.body.classList.remove('has-flow-cursor')}});
 }
 
 function studio(){return `<main id="main" class="page studio-page"><p class="eyebrow">${dot}${text('THE PRACTICE','关于我们')}</p><div class="studio-heading"><h1>${text('Two disciplines.<br>One vision.','两种专长，<br>一个愿景。')}</h1><div class="studio-sign" aria-hidden="true"><i></i></div></div><div class="studio-layout"><img src="${image('p05-00')}" alt="Yappari Steak interior" width="1602" height="842"><div class="studio-copy"><h2>${text('From the first sketch<br>to the first guest.','从第一笔草图，<br>到第一位来客。')}</h2><p>${text('D Design Office and D Construction Office are sister studios based in Sydney, devoted to interior architecture and its realisation. We work with the belief that a space is never finished at the drawing. It is finished when it is lived in.','D Design Office 与 D Construction Office 是位于悉尼的姊妹工作室，专注于室内建筑设计及其落地。我们相信，空间并不止于图纸；当人们走入其中，生活开始，设计才真正完整。')}</p><p>${text('Movement, ritual, light and material shape our work. DDO leads creative direction, interior architecture and documentation. DCO carries that vision into the built work — from first sketch to final handover.','人的动线、日常习惯、光线与材质，共同塑造我们的作品。DDO 负责创意方向、室内建筑设计与设计文件；DCO 将愿景落实为真实空间，从最初的草图一路走到交付。')}</p><a class="text-link" href="https://dconstructionoffice.com/" target="_blank" rel="noopener">D Construction Office ${arrow()}</a></div></div>${teamSection()}<div class="studio-principles"><div><span>01 / ${text('OBSERVE','观察')}</span><h3>${text('Begin with people.','从人出发。')}</h3><p>${text('Listen to how a place will be used, before deciding how it will look.','先理解一个空间如何被使用，再思考它的模样。')}</p></div><div><span>02 / ${text('EXPLORE','探索')}</span><h3>${text('Leave room for play.','给玩心留白。')}</h3><p>${text('Find character in light, material and the unexpected detail.','在光线、材质与意外的细节里，发现独特的性格。')}</p></div><div><span>03 / ${text('REALISE','实现')}</span><h3>${text('Carry the idea through.','让想法抵达。')}</h3><p>${text('A close conversation between design and construction, all the way to handover.','让设计与建造始终保持对话，直至空间交付。')}</p></div></div><a class="next-project" href="${url('contact/')}"><span>${text('START SOMETHING','开启新的故事')}</span><h2>${text('What do you have in mind?','你正在想象什么？')}</h2>${arrow()}</a></main>`}
@@ -223,5 +238,5 @@ if(PAGE==='home')bindFilm();
 if(PAGE==='project'&&currentProject){const d=$('#lightbox');$$('[data-photo]').forEach(b=>b.addEventListener('click',()=>{showPhoto(+b.dataset.photo);d.showModal()}));$('.light-close').addEventListener('click',()=>d.close());$('.light-prev').addEventListener('click',()=>showPhoto(lightIndex-1));$('.light-next').addEventListener('click',()=>showPhoto(lightIndex+1));d.addEventListener('click',e=>{if(e.target===d)d.close()})}
 if(PAGE==='contact')$('#copy-email').addEventListener('click',async()=>{try{await navigator.clipboard.writeText('info@ddesignoffice.com');$('#copy-result').textContent=text('Copied.','已复制。')}catch{$('#copy-result').textContent=text('Please select the address above to copy it.','请选择上方邮箱地址复制。')}});
 }
-document.addEventListener('visibilitychange',()=>{if(PAGE==='home'){startTimer();syncVideo();if(document.hidden){cancelAnimationFrame(fadeRAF);score.pause()}else if(soundWanted){setSoundLevel(0);soundContext?.resume().catch(()=>{});score.play().then(()=>volumeTo(.42,2200)).catch(()=>{soundWanted=false;updateSound()})}}});window.addEventListener('pagehide',()=>score.pause());window.addEventListener('popstate',()=>{if(PAGE==='projects')renderProjects()});document.addEventListener('keydown',e=>{if(!['ArrowLeft','ArrowRight'].includes(e.key)||/INPUT|TEXTAREA/.test(e.target.tagName))return;if(PAGE==='project'&&$('#lightbox')?.open){e.preventDefault();showPhoto(lightIndex+(e.key==='ArrowRight'?1:-1))}else if(PAGE==='home'){changeSlide(slide+(e.key==='ArrowRight'?1:-1));startTimer()}});reduced.addEventListener('change',e=>{if(e.matches){playing=false;finishIntro();if(PAGE==='home')render()}});render();bindPointerFlow();
+document.addEventListener('visibilitychange',()=>{if(PAGE==='home'){startTimer();syncVideo();if(document.hidden){cancelAnimationFrame(fadeRAF);score.pause()}else if(soundWanted){setSoundLevel(0);soundContext?.resume().catch(()=>{});score.play().then(()=>volumeTo(.42,2200)).catch(()=>{soundWanted=false;updateSound()})}}});window.addEventListener('pagehide',()=>score.pause());window.addEventListener('popstate',()=>{if(PAGE==='projects')renderProjects()});document.addEventListener('keydown',e=>{if(!['ArrowLeft','ArrowRight'].includes(e.key)||/INPUT|TEXTAREA/.test(e.target.tagName))return;if(PAGE==='project'&&$('#lightbox')?.open){e.preventDefault();showPhoto(lightIndex+(e.key==='ArrowRight'?1:-1))}else if(PAGE==='home'){changeSlide(slide+(e.key==='ArrowRight'?1:-1));startTimer()}});reduced.addEventListener('change',e=>{if(e.matches){playing=false;finishIntro();if(PAGE==='home')render()}});render();
 })();
