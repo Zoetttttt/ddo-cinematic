@@ -1,28 +1,26 @@
-# D Design Office — The art of being somewhere
+# D Design Office — revision 1 (9 November 2026)
 
-A standalone cinematic edition based on the revised 5 November 2026 brief.
+Standalone bilingual website. Build command: blank. Netlify publish directory: `.`. Branch: `main`.
 
-## Experience
+## Updated experience
 
-- V1's full-screen photography, overlaid title and navigation; Manrope typography from V3.
-- Four selected spaces: Sumi Bar, Yappari Steak, Arctic White and Dragon Hot Pot.
-- A 64-second visual cycle, slow continuous camera movement and 3.2-second dissolves.
-- Original 64-second ambient piano score, supplied locally as M4A. Click Sound to start. Audio fades in/out; nothing plays audibly before a user gesture.
-- Pause/play, manual scene selection, keyboard and mobile swipe controls; reduced-motion support.
-- English default with Chinese toggle; separate project pages, categories and brand filters; SVG arrows.
+- DDO letters appear and O contracts into a dot; thirteen supplied model frames follow in the requested order. The intro runs once per tab session and can be replayed using the dot beside “Interiors & human experience”. Skip and reduced-motion behaviour are supported.
+- Geometric Jost typography chosen to follow the monoline circular forms of the supplied logo wordmark. Jost is not claimed to be a verified identification of the original logo font. Its open font licence is included.
+- Five homepage scenes in order: Sumi Bar, Arctic White, KOKO / More Fun video, Dragon Hot Pot, Yebisu. The supplied video was already 3838 × 2158; this original resolution is preserved in the desktop version, with a 1920-wide version for mobile. Standard colour conversion and high-quality web encoding are used; no generative detail was added.
+- Gentle pointer-responsive movement, enlarged labels, coloured circular arrows.
+- Separate bilingual Services page with expandable service descriptions.
+- Purple Projects accent; Food & Beverage and Immersive Space category names.
+- Red Studio accent; the large D-shaped mark has no inner letter. Six team portraits and the supplied introduction are included.
+- New photography comes from the supplied Dropbox banner originals and print-quality portfolio. The full supplied team JPEG is retained at `assets/team-story-original.jpg`; portrait views are cropped for the page without redrawing their content.
 
-## Deploy
+## Versions
 
-Import this repository as a new Netlify project: branch `main`, no build command, publish directory `.`. All photos, fonts and music are local; no API key or database is required.
+[Latest](https://zoetttttt.github.io/ddo-cinematic/) · [Original cinematic edition](https://zoetttttt.github.io/ddo-cinematic/versions/2026-11-05/) · [Version index](https://zoetttttt.github.io/ddo-cinematic/versions/)
 
-Or unzip the supplied archive and upload the folder containing `index.html` to Netlify Drop.
+The old edition is an immutable snapshot of commit ed8582b. SHA-256 checksums are supplied under `versions/`.
 
-[Create a separate Netlify project](https://app.netlify.com/start/deploy?repository=https://github.com/Zoetttttt/ddo-cinematic)
+## Editing
 
-## Source
+`app.js`: bilingual content and interactions. `data.js`: projects. `style.css`: typography, layout, animation and colour accents. Assets are local. No build, database or API key is required.
 
-`app.js` contains bilingual content and interactions. `style.css` contains page layout and cinematic styling. `data.js` contains 24 selected portfolio projects. `assets/` contains imagery, Manrope and the original music recording.
-
-The soundtrack was composed and synthesised specifically for this edition. It contains no sampled commercial recording. The original DDO/DCO portfolio images and brand assets retain their respective rights. Manrope's SIL Open Font License is included.
-
-The earlier design editions and their published links remain separate.
+All DDO/DCO artwork and photographs remain the property of their respective rights holders. The original website score is retained. Open font licences accompany their fonts.
